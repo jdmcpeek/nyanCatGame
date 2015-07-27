@@ -1,3 +1,10 @@
+import ddf.minim.spi.*;
+import ddf.minim.signals.*;
+import ddf.minim.*;
+import ddf.minim.analysis.*;
+import ddf.minim.ugens.*;
+import ddf.minim.effects.*;
+
 // TODO
 // 4. add clouds/scenery
 // 5. other characters? 
@@ -8,10 +15,19 @@
 // IDEAS
 // 1. choose different characters before starting the game (multiple character options)
 // 2. add trail behind the character, like the Nyan cat's rainbow
-// 3. add laser beam functionality ;)
-// 
+// (done)3 . add laser beam functionality ;)
+// experiment with design principles. For instance, what's the difference between the singleton class and the factory class? What if I tried making a factory class for lasers? It makes sense, because we never really use the base class, `Projectile`, anyway. Good thinking, David.
 
 // maybe someday I'm going to have to create a Game object. But not yet... not yet. https://www.youtube.com/watch?v=OFVk5xVK7vs
+
+// what kind of obstacles will appear in this game?
+// 1. randomly generated
+//   a. mines
+//   b. battleships
+
+// what if I had multiple levels of this game and they all did different things?
+// 1. simple character enemies that shoot at the cat's current position, gets progressively harder and harder.
+// 2. battle game in which you play with your friend at a computer or real-time over a network. 
 
 
 int circleX = width/2;
@@ -19,11 +35,12 @@ int circleY = height/2;
 
 Character nyanCat;
 
-MaxHeap heap;
 import java.util.Comparator;
 import java.util.LinkedList; 
 import java.util.ListIterator;
 import java.util.Iterator;
+import java.util.Random;
+
 
 
 
@@ -37,13 +54,35 @@ Environment game;
 
 PImage img;
 PImage missile;
+Minim minim;
+AudioPlayer player;
+
+Random randomGenerator;
+
+ArrayList<String> laserBlasts = new ArrayList();
+ArrayList<String> missileLaunches = new ArrayList();
+ArrayList<String> explosions = new ArrayList(); 
 
 void setup() {
-  size(1280, 720);
+  size(1500, 900);
   game = new Environment(); 
+  
+  randomGenerator = new Random();
+  
   nyanCat = new Character(width/2, height/2, width/10, width/10);
   img = loadImage("Nyancat.png"); 
   missile = loadImage("missile.png");
+  
+  minim = new Minim(this);
+  
+  laserBlasts.add("laserBlast.wav");
+  laserBlasts.add("laserBlast2.wav");
+  laserBlasts.add("laserBlastSmall.wav");
+  missileLaunches.add("missileLaunch1.wav");
+  missileLaunches.add("missileLaunchBig.mp3");
+  explosions.add("explosion.wav");
+  explosions.add("explosion2.wav");
+  
   frameRate(60);
 }
 
@@ -51,12 +90,11 @@ void setup() {
 class Environment {
   LinkedList<Explosion> explosions = new LinkedList();
   LinkedList<Projectile> projectiles = new LinkedList();
-  
+
   void drawEverything() {
     drawProjectiles();
     drawExplosions();
   }
-
 
 
   void drawProjectiles() {
@@ -72,7 +110,7 @@ class Environment {
 
   void drawExplosions() {
     int numberOfBogies = explosions.size();
-    System.out.println(numberOfBogies);
+//    System.out.println(numberOfBogies);
     for (int i = 0; i < explosions.size (); i++) {
       explosions.get(i).explode();
       if (explosions.get(i).dissipate) { // explosion explodes, then shrinks to nothingness
@@ -128,15 +166,15 @@ class Character extends AcceleratingObject {
     Projectile projectile = new Projectile(location.x, location.y, 50, d, 50, 10);
 
     switch (key) {
-      case 'f': 
-        projectile = new LaserBeam(location.x, location.y, 50, d, 50, 10, new Color(255, 0, 0));
-        break;
-      case 'd': 
-        projectile = new Missile(location.x, location.y, 20, d, 100, 70);
-        break;
-      case 's':
-        projectile = new Missile(location.x, location.y, 20, d, 100, 70);
-        break;
+    case 'f': 
+      projectile = new LaserBeam(location.x, location.y, 50, d, 50, 10, new Color(255, 0, 0));
+      break;
+    case 'd': 
+      projectile = new Missile(location.x, location.y, 20, d, 100, 70);
+      break;
+    case 's':
+      projectile = new Missile(location.x, location.y, 20, d, 100, 70);
+      break;
     }
 
     game.projectiles.add(projectile);
@@ -217,7 +255,7 @@ class Explosion {
   Explosion(float x, float y, float maxRadius) {
     this(x, y, maxRadius, new Color());
   }
-  
+
   Explosion(float x, float y, float maxRadius, Color rgb) {
     location = new PVector(x, y);
     this.maxRadius = maxRadius; 
@@ -231,7 +269,8 @@ class Explosion {
     fill(255, 215, 0);
     ellipse(location.x, location.y, radius/2, radius/2);
     if (radius > maxRadius) expand = false;  
-    if (expand) radius++; else radius = radius - 2;
+    if (expand) radius++; 
+    else radius = radius - 2;
     if (radius < 1) dissipate = true;  // remove explosion
   }
 }
@@ -261,7 +300,7 @@ class Projectile {
     if (location.x > width - 50 && location.x < width - 25) return true;
     else if (location.x < 50 && location.x > 25) return true;
     // loop through all game objects and enemies and check to see if the projectile coincides with that.
-//    else if (random(0, 10) < 2) return true;
+    //    else if (random(0, 10) < 2) return true;
     else return false;
   }
 
@@ -300,7 +339,7 @@ class Missile extends Projectile {
   }
 
   @Override
-  void fire() {
+    void fire() {
     if (direction > 0) {
       pushMatrix();
       scale(-1, 1);
@@ -309,7 +348,7 @@ class Missile extends Projectile {
     } else if (direction < 0) {
       image(missile, location.x, location.y, 100, 75);
     }
-    
+
     if (random(0, 10) < 5) {
       Explosion fireTrail = new Explosion(location.x, location.y + dimensions.y/2, 25, new Color(255, 0, 0)); 
       game.explosions.add(fireTrail);
@@ -343,9 +382,21 @@ class Color {
   }
 }
 
+class Literature extends LinkedList {
+}
 
 
+void randomSound(ArrayList<String> jukeBox) {
+  int diceRoll = randomGenerator.nextInt(jukeBox.size());
+  AudioPlayer track = minim.loadFile(jukeBox.get(diceRoll));
+  track.play();
+//  track.rewind();  // go back to beginning after playing
+}
 
+void playSound(String sound) {
+  AudioPlayer track = minim.loadFile(sound);
+  track.play();
+}
 
 
 void keyPressed() {
@@ -358,6 +409,22 @@ void keyPressed() {
 
   if (key == 'f' || key == 'd' || key == 's' || key == 'a') {
     nyanCat.shootLasers(key);
+    switch(key) {
+    case 'f': 
+      playSound(laserBlasts.get(0));
+      break;
+    case 'd':
+      playSound(missileLaunches.get(0));
+      break;
+    case 's':
+      playSound(missileLaunches.get(1));
+      break;
+    case 'a':
+      playSound(laserBlasts.get(1));
+      break;
+      
+    
+    }
   }
 }
 void keyReleased() {
@@ -372,9 +439,12 @@ void keyReleased() {
 //PVector origin, int speed, int direction, PVector dimensions
 // how to slow the circle down to a stop? Instead of a sudden, abrupt stop?
 void draw() {
-  background(255);
+  background(216, 223, 255);
 
   nyanCat.move();  
   game.drawEverything();
+  
+  
+  
 }
 

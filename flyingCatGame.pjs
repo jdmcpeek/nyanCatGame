@@ -1,0 +1,468 @@
+
+var AcceleratingObject = (function() {
+function AcceleratingObject() {
+var $this_1 = this;
+function $superCstr(){$p.extendClassChain($this_1)}
+$this_1.location =  new $p.PVector(640, 360);
+$this_1.velocity =  new $p.PVector(0, 0);
+$this_1.maxSpeed =  20;
+$this_1.accelerationRateX =  $this_1.$self.calculateAccelerationRate(10, 1280);
+$this_1.accelerationRateY =  $this_1.$self.calculateAccelerationRate(8, 720);
+$this_1.frictionX =  $this_1.accelerationRateX / 2;
+$this_1.frictionY =  $this_1.accelerationRateY / 2;
+$this_1.size =  new $p.PVector(0, 0);
+$this_1.directionX =  1;
+$this_1.directionY =  1;
+function calculateAccelerationRate$2(travelTime, distance) {
+return ( (2 * distance)) / $p.sq(travelTime * $p.__frameRate);
+}
+$p.addMethod($this_1, 'calculateAccelerationRate', calculateAccelerationRate$2, false);
+function drawThing$0() {
+$p.fill(0);
+    $p.ellipse($this_1.location.x, $this_1.location.y, 50, 50);
+}
+$p.addMethod($this_1, 'drawThing', drawThing$0, false);
+function move$0() {
+$this_1.velocity.limit(30);
+    if ($this_1.location.x + $this_1.size.x/2 > $p.width || $this_1.location.x < 0 - $this_1.size.x/2) $this_1.velocity.x *= -1;
+    if ($this_1.location.y > $p.height - $this_1.size.y/3 || $this_1.location.y < 0) $this_1.velocity.y *= -1;
+    $this_1.location.add($this_1.velocity);
+    $this_1.$self.drawThing();
+    $this_1.$self.accelerate();
+
+    $this_1.directionX = $this_1.velocity.x > 0 ? 1 : -1;
+}
+$p.addMethod($this_1, 'move', move$0, false);
+function accelerate$0() {
+if (up) $this_1.velocity.y -= $this_1.accelerationRateY;
+    if (down) $this_1.velocity.y += $this_1.accelerationRateY;
+    if (right) $this_1.velocity.x += $this_1.accelerationRateX;
+    if (left) $this_1.velocity.x -= $this_1.accelerationRateX;
+}
+$p.addMethod($this_1, 'accelerate', accelerate$0, false);
+function $constr_4(x, y, sizeX, sizeY){
+$superCstr();
+
+$this_1.location.x = x;
+    $this_1.location.y = y;
+    $this_1.size.x = sizeX;
+    $this_1.size.y = sizeY;
+}
+
+function $constr() {
+if(arguments.length === 4) { $constr_4.apply($this_1, arguments); } else $superCstr();
+}
+$constr.apply(null, arguments);
+}
+return AcceleratingObject;
+})();
+$p.AcceleratingObject = AcceleratingObject;
+var Projectile = (function() {
+function Projectile() {
+var $this_1 = this;
+function $superCstr(){$p.extendClassChain($this_1)}
+$this_1.location = null;
+$this_1.speed = 0;
+$this_1.direction = 0;
+$this_1.dimensions = null;
+function fire$0() {
+$p.fill(0);
+    $p.rect($this_1.location.x, $this_1.location.y, $this_1.dimensions.x, $this_1.dimensions.y, 20);
+    $this_1.location.x += $this_1.speed * $this_1.direction;
+    $this_1.$self.explode();
+}
+$p.addMethod($this_1, 'fire', fire$0, false);
+function impact$0() {
+if ($this_1.location.x > $p.width - 50 && $this_1.location.x < $p.width - 25) return true;
+    else if ($this_1.location.x < 50 && $this_1.location.x > 25) return true;
+              else return false;
+}
+$p.addMethod($this_1, 'impact', impact$0, false);
+function explode$0() {
+if ($this_1.$self.impact()) {
+var explosion =  new Explosion($this_1.location.x, $this_1.location.y, 100);
+      game.explosions.add(explosion);
+}
+}
+$p.addMethod($this_1, 'explode', explode$0, false);
+function $constr_6(x, y, speed, direction, w, h){
+$superCstr();
+
+$this_1.location = new $p.PVector(x, y);
+    $this_1.speed = speed;
+    $this_1.direction = direction;
+    $this_1.dimensions = new $p.PVector(w, h);
+}
+
+function $constr() {
+if(arguments.length === 6) { $constr_6.apply($this_1, arguments); } else $superCstr();
+}
+$constr.apply(null, arguments);
+}
+return Projectile;
+})();
+$p.Projectile = Projectile;
+var Environment = (function() {
+function Environment() {
+var $this_1 = this;
+function $superCstr(){$p.extendClassChain($this_1)}
+$this_1.explosions =  new LinkedList();
+$this_1.projectiles =  new LinkedList();
+function drawEverything$0() {
+$this_1.$self.drawProjectiles();
+    $this_1.$self.drawExplosions();
+}
+$p.addMethod($this_1, 'drawEverything', drawEverything$0, false);
+function drawProjectiles$0() {
+var numberOfBogies =  $this_1.projectiles.size();
+         for (var i =  0;  i < $this_1.projectiles.size ();  i++) {
+$this_1.projectiles.get(i).fire();
+      if ($this_1.projectiles.get(i).location.x > $p.width + 100 || $this_1.projectiles.get(i).location.x < -100) {
+$this_1.projectiles.remove(i);
+}
+}
+}
+$p.addMethod($this_1, 'drawProjectiles', drawProjectiles$0, false);
+function drawExplosions$0() {
+var numberOfBogies =  $this_1.explosions.size();
+     for (var i =  0;  i < $this_1.explosions.size ();  i++) {
+$this_1.explosions.get(i).explode();
+      if ($this_1.explosions.get(i).dissipate) {
+$this_1.explosions.remove(i);
+}
+}
+}
+$p.addMethod($this_1, 'drawExplosions', drawExplosions$0, false);
+function $constr() {
+$superCstr();
+}
+$constr.apply(null, arguments);
+}
+return Environment;
+})();
+$p.Environment = Environment;
+var Character = (function() {
+function Character() {
+var $this_1 = this;
+var $super = { $upcast: $this_1 };
+function $superCstr(){AcceleratingObject.apply($super,arguments);if(!('$self' in $super)) $p.extendClassChain($super)}
+$this_1.projectiles = null;
+function drawThing$0() {
+if (left) {
+$p.pushMatrix();
+      $p.scale(-1, 1);
+      $p.image(img, -$this_1.location.x - $this_1.size.x, $this_1.location.y, 60 * 1.36, 60);
+      $p.popMatrix();
+} else if (right) {
+$p.image(img, $this_1.location.x, $this_1.location.y, 60 * 1.36, 60);
+} else if ($this_1.directionX < 0) {
+$p.pushMatrix();
+      $p.scale(-1, 1);
+      $p.image(img, -$this_1.location.x - $this_1.size.x, $this_1.location.y, 60 * 1.36, 60);
+      $p.popMatrix();
+} else {
+$p.image(img, $this_1.location.x, $this_1.location.y, 60 * 1.36, 60);
+}
+}
+$p.addMethod($this_1, 'drawThing', drawThing$0, false);
+function shootLasers$1(k) {
+var d =  $this_1.directionX;
+    if (left) d = -1;
+    if (right) d = 1;
+
+    var projectile =  new Projectile($this_1.location.x, $this_1.location.y, 50, d, 50, 10);
+
+    switch ($p.key) {
+case (new $p.Character('f')): 
+      projectile = new LaserBeam($this_1.location.x, $this_1.location.y, 50, d, 50, 10, new Color(255, 0, 0));
+      break;case (new $p.Character('d')): 
+      projectile = new Missile($this_1.location.x, $this_1.location.y, 20, d, 100, 70);
+      break;case (new $p.Character('s')):
+      projectile = new Missile($this_1.location.x, $this_1.location.y, 20, d, 100, 70);
+      break;
+}
+
+    game.projectiles.add(projectile);
+}
+$p.addMethod($this_1, 'shootLasers', shootLasers$1, false);
+function grow$0() {
+
+}
+$p.addMethod($this_1, 'grow', grow$0, false);
+function splitIntoArmy$0() {
+
+}
+$p.addMethod($this_1, 'splitIntoArmy', splitIntoArmy$0, false);
+function $constr_4(x, y, characterWidth, characterHeight){
+$superCstr(x, y, characterWidth, characterHeight);
+    $this_1.projectiles = new LinkedList();
+}
+
+function $constr() {
+if(arguments.length === 4) { $constr_4.apply($this_1, arguments); } else $superCstr();
+}
+$constr.apply(null, arguments);
+}
+$p.extendStaticMembers(Character, AcceleratingObject);
+Character.$base = AcceleratingObject;
+return Character;
+})();
+$p.Character = Character;
+var Explosion = (function() {
+function Explosion() {
+var $this_1 = this;
+function $superCstr(){$p.extendClassChain($this_1)}
+$this_1.location = null;
+$this_1.image = null;
+$this_1.maxRadius = 0;
+$this_1.radius =  1;
+$this_1.rgb = null;
+$this_1.dissipate =  false;
+$this_1.expand =  true;
+function explode$0() {
+$this_1.rgb.fillColor();
+    $p.ellipse($this_1.location.x, $this_1.location.y, $this_1.radius, $this_1.radius);
+    $p.fill(255, 215, 0);
+    $p.ellipse($this_1.location.x, $this_1.location.y, $this_1.radius/2, $this_1.radius/2);
+    if ($this_1.radius > $this_1.maxRadius) $this_1.expand = false;  
+    if ($this_1.expand) $this_1.radius++; 
+    else $this_1.radius = $this_1.radius - 2;
+    if ($this_1.radius < 1) $this_1.dissipate = true;
+}
+$p.addMethod($this_1, 'explode', explode$0, false);
+function $constr_3(x, y, maxRadius){
+$constr(x, y, maxRadius, new Color());
+}
+
+function $constr_4(x, y, maxRadius, rgb){
+$superCstr();
+
+$this_1.location = new $p.PVector(x, y);
+    $this_1.maxRadius = maxRadius; 
+    $this_1.rgb = rgb;
+}
+
+function $constr() {
+if(arguments.length === 3) { $constr_3.apply($this_1, arguments); } else if(arguments.length === 4) { $constr_4.apply($this_1, arguments); } else $superCstr();
+}
+$constr.apply(null, arguments);
+}
+return Explosion;
+})();
+$p.Explosion = Explosion;
+var LaserBeam = (function() {
+function LaserBeam() {
+var $this_1 = this;
+var $super = { $upcast: $this_1 };
+function $superCstr(){Projectile.apply($super,arguments);if(!('$self' in $super)) $p.extendClassChain($super)}
+$this_1.rgb = null;
+function fire$0() {
+$this_1.rgb.fillColor();
+    $p.rect($this_1.location.x, $this_1.location.y, $this_1.dimensions.x, $this_1.dimensions.y, 20);
+    $this_1.location.x += $this_1.speed * $this_1.direction;
+    $this_1.$self.explode();
+}
+$p.addMethod($this_1, 'fire', fire$0, false);
+@Overridefunction $constr_7(x, y, speed, direction, w, h, rgb){
+$superCstr(x, y, speed, direction, w, h);
+    $this_1.rgb = rgb;
+}
+
+function $constr() {
+if(arguments.length === 7) { $constr_7.apply($this_1, arguments); } else $superCstr();
+}
+$constr.apply(null, arguments);
+}
+$p.extendStaticMembers(LaserBeam, Projectile);
+LaserBeam.$base = Projectile;
+return LaserBeam;
+})();
+$p.LaserBeam = LaserBeam;
+var Missile = (function() {
+function Missile() {
+var $this_1 = this;
+var $super = { $upcast: $this_1 };
+function $superCstr(){Projectile.apply($super,arguments);if(!('$self' in $super)) $p.extendClassChain($super)}
+function fire$0() {
+if ($this_1.direction > 0) {
+$p.pushMatrix();
+      $p.scale(-1, 1);
+      $p.image(missile, -$this_1.location.x - $this_1.dimensions.x, $this_1.location.y, 100, 75);
+      $p.popMatrix();
+} else if ($this_1.direction < 0) {
+$p.image(missile, $this_1.location.x, $this_1.location.y, 100, 75);
+}
+
+    if ($p.random(0, 10) < 5) {
+var fireTrail =  new Explosion($this_1.location.x, $this_1.location.y + $this_1.dimensions.y/2, 25, new Color(255, 0, 0)); 
+      game.explosions.add(fireTrail);
+}
+
+    $this_1.location.x += $this_1.speed * $this_1.direction;
+    $this_1.$self.explode();
+}
+$p.addMethod($this_1, 'fire', fire$0, false);
+@Overridefunction $constr_6(x, y, speed, direction, w, h){
+$superCstr(x, y, speed, direction, w, h);
+}
+
+function $constr() {
+if(arguments.length === 6) { $constr_6.apply($this_1, arguments); } else $superCstr();
+}
+$constr.apply(null, arguments);
+}
+$p.extendStaticMembers(Missile, Projectile);
+Missile.$base = Projectile;
+return Missile;
+})();
+$p.Missile = Missile;
+var Color = (function() {
+function Color() {
+var $this_1 = this;
+function $superCstr(){$p.extendClassChain($this_1)}
+$this_1.red = 0;
+$this_1.green = 0;
+$this_1.blue = 0;
+function fillColor$0() {
+$p.fill($this_1.red, $this_1.green, $this_1.blue);
+}
+$p.addMethod($this_1, 'fillColor', fillColor$0, false);
+function backgroundColor$0() {
+$p.background($this_1.red, $this_1.green, $this_1.blue);
+}
+$p.addMethod($this_1, 'backgroundColor', backgroundColor$0, false);
+function $constr_0(){
+$constr($p.random(0, 255), $p.random(0, 255), $p.random(0, 255));
+}
+
+function $constr_3(red, green, blue){
+$superCstr();
+
+$this_1.red = red;
+    $this_1.green = green;
+    $this_1.blue = blue;
+}
+
+function $constr() {
+if(arguments.length === 0) { $constr_0.apply($this_1, arguments); } else if(arguments.length === 3) { $constr_3.apply($this_1, arguments); } else $superCstr();
+}
+$constr.apply(null, arguments);
+}
+return Color;
+})();
+$p.Color = Color;
+var Literature = (function() {
+function Literature() {
+var $this_1 = this;
+var $super = { $upcast: $this_1 };
+function $superCstr(){LinkedList.apply($super,arguments);if(!('$self' in $super)) $p.extendClassChain($super)}
+function $constr() {
+$superCstr();
+}
+$constr.apply(null, arguments);
+}
+Literature.$base = LinkedList;
+return Literature;
+})();
+$p.Literature = Literature;
+
+var circleX =  $p.width/2;
+var circleY =  $p.height/2;
+
+var nyanCat = null;
+
+ var left =  false;
+var right =  false;
+var up =  false;
+var down =  false;
+
+var game = null;
+
+var img = null;
+var missile = null;
+var minim = null;
+var player = null;
+
+var randomGenerator = null;
+
+var laserBlasts =  new $p.ArrayList();
+var missileLaunches =  new $p.ArrayList();
+var explosions =  new $p.ArrayList();
+
+function setup() {
+$p.size(1500, 900);
+  game = new Environment();
+
+  randomGenerator = new $p.Random();
+
+  nyanCat = new Character($p.width/2, $p.height/2, $p.width/10, $p.width/10);
+  img = $p.loadImage("Nyancat.png"); 
+  missile = $p.loadImage("missile.png");
+
+  minim = new Minim(this);
+
+  laserBlasts.add("laserBlast.wav");
+  laserBlasts.add("laserBlast2.wav");
+  laserBlasts.add("laserBlastSmall.wav");
+  missileLaunches.add("missileLaunch1.wav");
+  explosions.add("explosion.wav");
+  explosions.add("explosion2.wav");
+
+  $p.frameRate(60);
+}
+$p.setup = setup;
+
+function randomSound(jukeBox) {
+var diceRoll =  randomGenerator.nextInt(jukeBox.size());
+  var track =  minim.loadFile(jukeBox.get(diceRoll));
+  track.play();
+}
+$p.randomSound = randomSound;
+
+function playSound(sound) {
+var track =  minim.loadFile(sound);
+  track.play();
+}
+$p.playSound = playSound;
+
+function keyPressed() {
+if ($p.key == $p.CODED) {
+if ($p.keyCode == $p.UP && up == false) up = true;
+    if ($p.keyCode == $p.DOWN && down == false) down = true; 
+    if ($p.keyCode == $p.RIGHT && right == false) right = true; 
+    if ($p.keyCode == $p.LEFT && left == false) left = true;
+}
+
+  if ($p.key == (new $p.Character('f')) || $p.key == (new $p.Character('d')) || $p.key == (new $p.Character('s')) || $p.key == (new $p.Character('a'))) {
+nyanCat.shootLasers($p.key);
+    switch($p.key) {
+case (new $p.Character('f')): 
+      playSound(laserBlasts.get(0));
+      break;case (new $p.Character('d')):
+      playSound(missileLaunches.get(0));
+      break;case (new $p.Character('s')):
+      playSound(missileLaunches.get(1));
+      break;case (new $p.Character('a')):
+      playSound(laserBlasts.get(1));
+      break;
+}
+}
+}
+$p.keyPressed = keyPressed;
+function keyReleased() {
+if ($p.key == $p.CODED) {
+if ($p.keyCode == $p.UP) up = false;
+    if ($p.keyCode == $p.DOWN) down = false;
+    if ($p.keyCode == $p.RIGHT) right = false;
+    if ($p.keyCode == $p.LEFT) left = false;
+}
+}
+$p.keyReleased = keyReleased;
+
+  function draw() {
+$p.background(216, 223, 255);
+
+  nyanCat.move();  
+  game.drawEverything();
+}
+$p.draw = draw;
